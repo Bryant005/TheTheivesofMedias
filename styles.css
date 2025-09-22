@@ -53,7 +53,7 @@ h3{font-size:1.125rem}
 /* Forms */
 form{background:var(--card); padding:1rem; border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,0.06); max-width:700px}
 label{display:block; font-weight:700; margin-top:0.75rem}
-input[type="text"], input[type="email"], input[type="date"], textarea, input[type="file"]{width:100%; padding:0.5rem; border:1px solid #ccc; border-radius:4px; font-size:1rem}
+input[type="text"], input[type="email"], input[type="date"], textarea, input[type="file"], input[type="url"], input[type="password"]{width:100%; padding:0.5rem; border:1px solid #ccc; border-radius:4px; font-size:1rem}
 .form-row{margin-top:1rem; display:flex; gap:0.75rem}
 
 /* Video list */
