@@ -7,7 +7,7 @@ const SESSION_KEY = 'retrotube_admin_unlocked';
 
 // === Admin unlock logic (client-side simple protection) ===
 // Replace the ADMIN_PASSWORD string below with your chosen password.
-const ADMIN_PASSWORD = 'enter_your_admin_password_here';
+const ADMIN_PASSWORD = Greg;
 
 function setUnlocked(unlocked){
   const overlay = document.getElementById('adminOverlay');
