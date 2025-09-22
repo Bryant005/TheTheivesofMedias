@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Upload Video — RetroTube</title>
+  <meta name="description" content="Upload videos to RetroTube. Add captions and transcripts to make videos accessible." />
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header" role="banner">
+    <div class="logo"><a href="index.html"><img src="logo-retrotube.png" alt="RetroTube logo" width="160" height="48"></a></div>
+    <nav class="main-nav" role="navigation" aria-label="Main">
+      <ul>
+        <li><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="browse.html" class="nav-link">Browse</a></li>
+        <li><a href="upload.html" class="nav-link">Upload</a></li>
+        <li><a href="about.html" class="nav-link">About</a></li>
+        <li><a href="contact.html" class="nav-link">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="main" role="main">
+    <h1>Upload a video</h1>
+    <h2>Step 1 — Select file</h2>
+    <p>Supported formats: MP4, WebM. Max: browser storage limits apply.</p>
+
+    <form id="uploadForm" aria-label="Video upload form">
+      <label for="title">Title (keyword in title)</label>
+      <input id="title" name="title" type="text" required minlength="3" aria-required="true">
+
+      <label for="description">Description (include keyword in H2s and description)</label>
+      <textarea id="description" name="description" required rows="4"></textarea>
+
+      <label for="videoFile">Video file</label>
+      <input id="videoFile" name="videoFile" type="file" accept="video/mp4,video/webm" required>
+
+      <label for="captionFile">Caption file (WebVTT .vtt) — optional</label>
+      <input id="captionFile" name="captionFile" type="file" accept=".vtt">
+
+      <label for="transcript">Or paste a transcript (text)</label>
+      <textarea id="transcript" name="transcript" rows="6"></textarea>
+
+      <div class="form-row">
+        <button type="submit" class="btn">Upload video</button>
+        <button type="reset" class="btn alt">Reset</button>
+      </div>
+
+      <div id="uploadStatus" role="status" aria-live="polite"></div>
+    </form>
+  </main>
+
+  <footer class="site-footer" role="contentinfo">
+    <p>© RetroTube</p>
+  </footer>
+
+  <script src="script.js" defer></script>
+</body>
+</html>
