@@ -1,14 +1,14 @@
-// RetroTube script: YouTube-link workflow, owner-only admin unlock, localStorage persistence.
+// Updated RetroTube script: fetch shared data/videos.json from repo (public), merge with local owner entries,
+// YouTube-link workflow, owner-only admin unlock, local persistence, gallery and news rendering.
 
-// Constants
+// CONFIG
 const STORAGE_VIDEOS = 'retrotube_videos_v1';
 const STORAGE_NEWS = 'retrotube_news_v1';
 const SESSION_KEY = 'retrotube_admin_unlocked';
+const SHARED_VIDEOS_PATH = 'data/videos.json'; // add data/videos.json to your repo
+const ADMIN_PASSWORD = 'enter_your_admin_password_here'; // set your password here
 
-// === Admin unlock logic (client-side simple protection) ===
-// Replace the ADMIN_PASSWORD string below with your chosen password.
-const ADMIN_PASSWORD = 'enter_your_admin_password_here';
-
+// -------------------- Admin unlock logic --------------------
 function setUnlocked(unlocked){
   const overlay = document.getElementById('adminOverlay');
   const uploadForm = document.getElementById('uploadForm');
@@ -29,150 +29,99 @@ function setUnlocked(unlocked){
   }
 }
 
+// -------------------- DOM Ready --------------------
 document.addEventListener('DOMContentLoaded', ()=> {
-  // initialize admin overlay if present
-  const overlay = document.getElementById('adminOverlay');
-  if(overlay){
-    const unlockBtn = document.getElementById('unlockBtn');
-    const cancelBtn = document.getElementById('cancelBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const adminPass = document.getElementById('adminPass');
-    const adminStatus = document.getElementById('adminStatus');
-
-    if(sessionStorage.getItem(SESSION_KEY) === '1') setUnlocked(true);
-    else setUnlocked(false);
-
-    unlockBtn && unlockBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      const val = adminPass.value || '';
-      if(!val){ adminStatus.textContent = 'Enter password.'; return; }
-      if(val === ADMIN_PASSWORD){
-        adminStatus.textContent = 'Unlocked for this session.';
-        setUnlocked(true);
-        adminPass.value = '';
-      } else {
-        adminStatus.textContent = 'Incorrect password.';
-      }
-    });
-
-    cancelBtn && cancelBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      if(!sessionStorage.getItem(SESSION_KEY)) window.location.href = 'index.html';
-    });
-
-    logoutBtn && logoutBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      setUnlocked(false);
-      const adminStatus = document.getElementById('adminStatus');
-      if(adminStatus) adminStatus.textContent = 'Locked.';
-    });
-
-    document.addEventListener('keydown', (e) => {
-      if(overlay.style.display !== 'none' && e.key === 'Escape') {
-        if(!sessionStorage.getItem(SESSION_KEY)) window.location.href = 'index.html';
-      }
-    });
-  }
-
-  // initialize upload form handler (YouTube link)
-  const uploadForm = document.getElementById('uploadForm');
-  if(uploadForm){
-    uploadForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if(sessionStorage.getItem(SESSION_KEY) !== '1'){
-        document.getElementById('uploadStatus').textContent = 'Unlock admin first to add videos.';
-        return;
-      }
-      const statusEl = document.getElementById('uploadStatus');
-      statusEl.textContent = 'Validating...';
-      const ytUrl = (document.getElementById('ytUrl') || {}).value || '';
-      const title = (document.getElementById('title') || {}).value.trim() || '';
-      const description = (document.getElementById('description') || {}).value.trim() || '';
-      const transcript = (document.getElementById('transcript') || {}).value.trim() || '';
-      const posterInput = document.getElementById('posterFile');
-
-      const youtubeId = extractYouTubeId(ytUrl);
-      if(!youtubeId){
-        statusEl.textContent = 'Invalid YouTube URL. Use a full https://youtu.be/ or youtube.com/watch?v= link.';
-        return;
-      }
-
-      // optional poster image as data URL (limit size)
-      let posterData = '';
-      if(posterInput && posterInput.files && posterInput.files.length){
-        const file = posterInput.files[0];
-        if(file.size > 250 * 1024){
-          statusEl.textContent = 'Poster image too large. Please use an image under ~250 KB.';
-          return;
-        }
-        try {
-          posterData = await fileToDataUrl(file);
-        } catch (err) {
-          statusEl.textContent = 'Error reading poster image.';
-          return;
-        }
-      }
-
-      const id = 'y' + Date.now();
-      const record = { id, title, description, youtubeId, transcript, posterData, created: new Date().toISOString() };
-      const arr = loadVideos();
-      arr.unshift(record);
-      saveVideos(arr);
-      statusEl.textContent = 'Video added. It will appear in Browse and Gallery.';
-      uploadForm.reset();
-      renderBrowse();
-      renderGallery();
-    });
-  }
-
-  // contact form
-  const contactForm = document.getElementById('contactForm');
-  if(contactForm){
-    contactForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const status = document.getElementById('contactStatus');
-      const name = document.getElementById('name').value.trim();
-      const email = document.getElementById('email').value.trim();
-      const message = document.getElementById('message').value.trim();
-      if(!name || !email || !message){ status.textContent = 'Please complete all fields.'; return; }
-      status.textContent = 'Message sent (simulated). Thank you!';
-      contactForm.reset();
-    });
-  }
-
-  // news form
-  const newsForm = document.getElementById('newsForm');
-  if(newsForm){
-    newsForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const status = document.getElementById('newsStatus');
-      const title = document.getElementById('newsTitle').value.trim();
-      const date = document.getElementById('newsDate').value;
-      const body = document.getElementById('newsBody').value.trim();
-      if(!title || !date || !body){ status.textContent = 'Please complete all fields.'; return; }
-      const id = 'n' + Date.now();
-      const arr = load(STORAGE_NEWS);
-      arr.unshift({ id, title, date, body, created: new Date().toISOString() });
-      save(STORAGE_NEWS, arr);
-      status.textContent = 'News published locally.';
-      newsForm.reset();
-      renderNewsList();
-    });
-  }
-
-  // initial render
+  initAdminOverlay();
+  initUploadForm();
+  initContactForm();
+  initNewsForm();
+  // initial render (async functions called, they handle awaiting)
   renderBrowse();
   renderGallery();
   renderNewsList();
 });
 
-// ==================== Utilities: storage, file read ====================
+// -------------------- Init helpers --------------------
+function initAdminOverlay(){
+  const overlay = document.getElementById('adminOverlay');
+  if(!overlay) return;
+  const unlockBtn = document.getElementById('unlockBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const adminPass = document.getElementById('adminPass');
+  const adminStatus = document.getElementById('adminStatus');
+
+  if(sessionStorage.getItem(SESSION_KEY) === '1') setUnlocked(true);
+  else setUnlocked(false);
+
+  unlockBtn && unlockBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    const val = (adminPass.value || '').trim();
+    if(!val){ if(adminStatus) adminStatus.textContent = 'Enter password.'; return; }
+    if(val === ADMIN_PASSWORD){
+      if(adminStatus) adminStatus.textContent = 'Unlocked for this session.';
+      setUnlocked(true);
+      adminPass.value = '';
+    } else {
+      if(adminStatus) adminStatus.textContent = 'Incorrect password.';
+    }
+  });
+
+  cancelBtn && cancelBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    if(!sessionStorage.getItem(SESSION_KEY)) window.location.href = 'index.html';
+  });
+
+  logoutBtn && logoutBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    setUnlocked(false);
+    if(adminStatus) adminStatus.textContent = 'Locked.';
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if(overlay.style.display !== 'none' && e.key === 'Escape') {
+      if(!sessionStorage.getItem(SESSION_KEY)) window.location.href = 'index.html';
+    }
+  });
+}
+
+// -------------------- Storage utilities --------------------
 function load(key){ try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { return []; } }
 function save(key, arr){ localStorage.setItem(key, JSON.stringify(arr)); }
 function loadVideos(){ return load(STORAGE_VIDEOS); }
 function saveVideos(arr){ save(STORAGE_VIDEOS, arr); }
 
-// file to data URL (for poster images)
+// -------------------- Shared videos fetch & merge --------------------
+async function fetchSharedVideos(){
+  try {
+    const res = await fetch(SHARED_VIDEOS_PATH, { cache: 'no-store' });
+    if(!res.ok) return [];
+    const arr = await res.json();
+    return Array.isArray(arr) ? arr : [];
+  } catch (e) {
+    console.warn('Error fetching shared videos', e);
+    return [];
+  }
+}
+
+async function loadCombinedVideos(){
+  const shared = await fetchSharedVideos();
+  const local = loadVideos();
+  const map = new Map();
+  shared.forEach(v => {
+    if(!v) return;
+    const key = v.youtubeId || v.id;
+    if(key) map.set(key, v);
+  });
+  local.forEach(v => {
+    if(!v) return;
+    const key = v.youtubeId || v.id;
+    if(key && !map.has(key)) map.set(key, v);
+  });
+  return Array.from(map.values());
+}
+
+// -------------------- File helper --------------------
 function fileToDataUrl(file){
   return new Promise((res, rej) => {
     const reader = new FileReader();
@@ -182,7 +131,7 @@ function fileToDataUrl(file){
   });
 }
 
-// Extract YouTube ID from multiple URL formats
+// -------------------- YouTube ID extraction --------------------
 function extractYouTubeId(url){
   if(!url) return null;
   try {
@@ -201,15 +150,99 @@ function extractYouTubeId(url){
   } catch (e) { return null; }
 }
 
-// ==================== Render functions ====================
-function renderBrowse(){
+// -------------------- Upload form (owner adds YouTube links) --------------------
+function initUploadForm(){
+  const uploadForm = document.getElementById('uploadForm');
+  if(!uploadForm) return;
+  uploadForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if(sessionStorage.getItem(SESSION_KEY) !== '1'){
+      const statusEl = document.getElementById('uploadStatus');
+      if(statusEl) statusEl.textContent = 'Unlock admin first to add videos.';
+      return;
+    }
+    const statusEl = document.getElementById('uploadStatus');
+    statusEl && (statusEl.textContent = 'Validating...');
+    const ytUrl = (document.getElementById('ytUrl') || {}).value || '';
+    const title = (document.getElementById('title') || {}).value.trim() || '';
+    const description = (document.getElementById('description') || {}).value.trim() || '';
+    const transcript = (document.getElementById('transcript') || {}).value.trim() || '';
+    const posterInput = document.getElementById('posterFile');
+
+    const youtubeId = extractYouTubeId(ytUrl);
+    if(!youtubeId){
+      statusEl && (statusEl.textContent = 'Invalid YouTube URL. Use a standard youtube.com or youtu.be link.');
+      return;
+    }
+
+    let posterData = '';
+    if(posterInput && posterInput.files && posterInput.files.length){
+      const file = posterInput.files[0];
+      if(file.size > 250 * 1024){
+        statusEl && (statusEl.textContent = 'Poster image too large. Use <250 KB.');
+        return;
+      }
+      try { posterData = await fileToDataUrl(file); } catch { statusEl && (statusEl.textContent = 'Error reading poster image.'); return; }
+    }
+
+    const id = 'y' + Date.now();
+    const record = { id, title, description, youtubeId, transcript, posterData, created: new Date().toISOString() };
+    const arr = loadVideos();
+    arr.unshift(record);
+    saveVideos(arr);
+    statusEl && (statusEl.textContent = 'Video added locally. To make it public, add it to data/videos.json in the repo.');
+    uploadForm.reset();
+    renderBrowse();
+    renderGallery();
+  });
+}
+
+// -------------------- Contact form --------------------
+function initContactForm(){
+  const contactForm = document.getElementById('contactForm');
+  if(!contactForm) return;
+  contactForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const status = document.getElementById('contactStatus');
+    const name = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const message = document.getElementById('message').value.trim();
+    if(!name || !email || !message){ status.textContent = 'Please complete all fields.'; return; }
+    status.textContent = 'Message sent (simulated). Thank you!';
+    contactForm.reset();
+  });
+}
+
+// -------------------- News form --------------------
+function initNewsForm(){
+  const newsForm = document.getElementById('newsForm');
+  if(!newsForm) return;
+  newsForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const status = document.getElementById('newsStatus');
+    const title = document.getElementById('newsTitle').value.trim();
+    const date = document.getElementById('newsDate').value;
+    const body = document.getElementById('newsBody').value.trim();
+    if(!title || !date || !body){ status.textContent = 'Please complete all fields.'; return; }
+    const id = 'n' + Date.now();
+    const arr = load(STORAGE_NEWS);
+    arr.unshift({ id, title, date, body, created: new Date().toISOString() });
+    save(STORAGE_NEWS, arr);
+    status.textContent = 'News published locally.';
+    newsForm.reset();
+    renderNewsList();
+  });
+}
+
+// -------------------- Render Browse (async - uses combined list) --------------------
+async function renderBrowse(){
   const container = document.getElementById('videoList');
   if(!container) return;
   container.innerHTML = '';
-  const arr = loadVideos();
-  if(!arr.length){
+  const arr = await loadCombinedVideos();
+  if(!arr || !arr.length){
     const p = document.createElement('p');
-    p.textContent = 'No videos yet. Owner can add YouTube links on Upload.';
+    p.textContent = 'No videos yet. Owner can add YouTube links on Upload or update data/videos.json in the repo.';
     container.appendChild(p);
     return;
   }
@@ -249,7 +282,6 @@ function renderBrowse(){
       renderGallery();
     });
     actions.appendChild(delBtn);
-
     art.appendChild(actions);
 
     if(v.transcript){
@@ -269,11 +301,12 @@ function renderBrowse(){
   });
 }
 
-function renderGallery(){
+// -------------------- Render Gallery (async) --------------------
+async function renderGallery(){
   const gallery = document.getElementById('galleryGrid');
   if(!gallery) return;
   gallery.innerHTML = '';
-  const arr = loadVideos();
+  const arr = await loadCombinedVideos();
   if(!arr.length){ gallery.appendChild(document.createElement('p')).textContent = 'No gallery items yet.'; return; }
   arr.forEach(v => {
     const div = document.createElement('div');
@@ -284,6 +317,7 @@ function renderGallery(){
     img.className = 'gallery-thumb';
     img.alt = v.title || 'Video thumbnail';
     if(v.posterData) img.src = v.posterData;
+    else if(v.posterUrl) img.src = v.posterUrl;
     else img.src = `https://img.youtube.com/vi/${v.youtubeId}/hqdefault.jpg`;
     div.appendChild(img);
 
@@ -297,7 +331,7 @@ function renderGallery(){
   });
 }
 
-// ==================== News rendering ====================
+// -------------------- Render News --------------------
 function renderNewsList(){
   const container = document.getElementById('newsList');
   if(!container) return;
