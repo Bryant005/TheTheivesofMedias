@@ -3,9 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Upload Video — RetroTube</title>
-  <meta name="description" content="Upload videos to RetroTube. Add captions and transcripts to make videos accessible." />
+  <title>Upload Video — RetroTube (Owner Only)</title>
+  <meta name="description" content="Upload videos to RetroTube. Owner-only upload page." />
   <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Simple overlay styles for the admin unlock */
+    .admin-overlay{
+      position:fixed; inset:0; background:rgba(0,0,0,0.65); display:flex; align-items:center; justify-content:center; z-index:9999;
+    }
+    .admin-box{background:#fff;padding:1.25rem;border-radius:8px;max-width:420px;width:100%}
+    .admin-box h2{margin-top:0}
+    .hidden{display:none}
+  </style>
 </head>
 <body>
   <header class="site-header" role="banner">
@@ -23,15 +32,15 @@
   </header>
 
   <main id="main" role="main">
-    <h1>Upload a video</h1>
-    <h2>Step 1 — Select file</h2>
-    <p>Supported formats: MP4, WebM. Max: browser storage limits apply.</p>
+    <h1>Owner Upload (admin only)</h1>
 
-    <form id="uploadForm" aria-label="Video upload form">
-      <label for="title">Title (keyword in title)</label>
+    <div id="lockedNotice" class="meta">This page is locked. Please unlock with your admin password to upload.</div>
+
+    <form id="uploadForm" class="hidden" aria-label="Video upload form">
+      <label for="title">Title</label>
       <input id="title" name="title" type="text" required minlength="3" aria-required="true">
 
-      <label for="description">Description (include keyword in H2s and description)</label>
+      <label for="description">Description</label>
       <textarea id="description" name="description" required rows="4"></textarea>
 
       <label for="videoFile">Video file</label>
@@ -59,6 +68,144 @@
     <p>© RetroTube</p>
   </footer>
 
-  <script src="script.js" defer></script>
+  <!-- Admin unlock overlay -->
+  <div id="adminOverlay" class="admin-overlay" aria-hidden="false" role="dialog" aria-modal="true">
+    <div class="admin-box" role="document">
+      <h2>Admin unlock</h2>
+      <p>Enter the admin password to enable uploads for this browser session.</p>
+      <label for="adminPass">Admin password</label>
+      <input id="adminPass" type="password" autocomplete="current-password">
+      <div style="margin-top:0.75rem">
+        <button id="unlockBtn" class="btn">Unlock</button>
+        <button id="cancelBtn" class="btn alt">Cancel</button>
+        <button id="logoutBtn" class="btn alt hidden">Lock</button>
+      </div>
+      <div id="adminStatus" role="status" aria-live="polite" style="margin-top:0.5rem"></div>
+    </div>
+  </div>
+
+  <script>
+    // === CONFIGURE HERE ===
+    // Replace this with a password you choose. Keep it secret.
+    const ADMIN_PASSWORD = 'replace_with_your_password';
+    // ======================
+
+    // Session key used to remember admin unlock for this browser session only
+    const SESSION_KEY = 'retrotube_admin_unlocked';
+
+    const overlay = document.getElementById('adminOverlay');
+    const unlockBtn = document.getElementById('unlockBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const adminPass = document.getElementById('adminPass');
+    const adminStatus = document.getElementById('adminStatus');
+    const uploadForm = document.getElementById('uploadForm');
+    const lockedNotice = document.getElementById('lockedNotice');
+
+    function setUnlocked(unlocked){
+      if(unlocked){
+        sessionStorage.setItem(SESSION_KEY, '1');
+        overlay.style.display = 'none';
+        uploadForm.classList.remove('hidden');
+        lockedNotice.classList.add('hidden');
+        logoutBtn.classList.remove('hidden');
+      } else {
+        sessionStorage.removeItem(SESSION_KEY);
+        overlay.style.display = '';
+        uploadForm.classList.add('hidden');
+        lockedNotice.classList.remove('hidden');
+        logoutBtn.classList.add('hidden');
+      }
+    }
+
+    // initialize state
+    if(sessionStorage.getItem(SESSION_KEY) === '1'){
+      setUnlocked(true);
+    } else {
+      setUnlocked(false);
+    }
+
+    unlockBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const val = adminPass.value || '';
+      if(!val) { adminStatus.textContent = 'Enter password.'; return; }
+      if(val === ADMIN_PASSWORD){
+        adminStatus.textContent = 'Unlocked for this session.';
+        setUnlocked(true);
+        adminPass.value = '';
+      } else {
+        adminStatus.textContent = 'Incorrect password.';
+      }
+    });
+
+    cancelBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      // If not unlocked, send user back to home
+      if(!sessionStorage.getItem(SESSION_KEY)) window.location.href = 'index.html';
+    });
+
+    logoutBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      setUnlocked(false);
+      adminStatus.textContent = 'Locked.';
+    });
+
+    // Optional: keyboard accessibility - focus the password input when overlay shown
+    document.addEventListener('keydown', (e) => {
+      if(overlay.style.display !== 'none' && e.key === 'Escape') {
+        // if not unlocked, go home
+        if(!sessionStorage.getItem(SESSION_KEY)) window.location.href = 'index.html';
+      }
+    });
+
+    // Upload form submit: uses your existing client-side upload logic
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      // ensure admin unlocked
+      if(sessionStorage.getItem(SESSION_KEY) !== '1'){
+        document.getElementById('uploadStatus').textContent = 'You must unlock admin to upload.';
+        return;
+      }
+
+      // Existing simple local upload behavior (keeps using localStorage as before).
+      // Replace this block with your server upload call if you later add a backend.
+      const status = document.getElementById('uploadStatus');
+      status.textContent = 'Processing upload...';
+      const title = document.getElementById('title').value.trim();
+      const description = document.getElementById('description').value.trim();
+      const videoFileInput = document.getElementById('videoFile');
+      const captionFileInput = document.getElementById('captionFile');
+      const posterFileInput = document.getElementById('posterFile');
+      const transcriptText = document.getElementById('transcript').value.trim();
+
+      if(!videoFileInput.files.length){
+        status.textContent = 'Please select a video file.';
+        return;
+      }
+      // store as object URL for demo; production should upload to server
+      const file = videoFileInput.files[0];
+      const blobUrl = URL.createObjectURL(file);
+      let vtt = '';
+      if(captionFileInput.files.length) vtt = await captionFileInput.files[0].text();
+
+      let posterUrl = '';
+      if(posterFileInput && posterFileInput.files.length){
+        posterUrl = URL.createObjectURL(posterFileInput.files[0]);
+      }
+
+      const id = 'v' + Date.now();
+      const videoObj = { id, title, description, blobUrl, created: new Date().toISOString(), vtt, transcript: transcriptText, poster: posterUrl };
+      // save to localStorage as demo storage (visible to you only)
+      const key = 'retrotube_videos_v1';
+      const arr = JSON.parse(localStorage.getItem(key) || '[]');
+      arr.unshift(videoObj);
+      localStorage.setItem(key, JSON.stringify(arr));
+
+      status.textContent = 'Upload saved locally. Only you can see it on this browser.';
+      this.reset();
+      setTimeout(()=> URL.revokeObjectURL(blobUrl), 5000);
+      if(posterUrl) setTimeout(()=> URL.revokeObjectURL(posterUrl), 5000);
+    });
+  </script>
 </body>
 </html>
