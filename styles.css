@@ -6,7 +6,7 @@
   --card:#fff;
   --focus:#ffbf80;
   --font-family: "Arial", "Helvetica", sans-serif;
-  --base-size:18px; /* body text >=16, using 18 */
+  --base-size:18px;
 }
 *{box-sizing:border-box}
 html{font-size:16px}
@@ -15,7 +15,7 @@ body{
   background:linear-gradient(180deg,#f4f7fb,#eef3ff);
   color:var(--text);
   margin:0;
-  line-height:1.6; /* >=1.5 */
+  line-height:1.6;
   font-size:var(--base-size);
 }
 a{color:var(--accent); text-decoration:none}
@@ -47,16 +47,28 @@ h3{font-size:1.125rem}
 /* Buttons */
 .btn{background:var(--accent); color:#fff; border:none; padding:0.6rem 1rem; cursor:pointer; border-radius:4px; font-weight:700}
 .btn.alt{background:#e6e6e6;color:#111}
+.btn-delete{background:#b30000}
+.btn-edit{background:#0073b3}
 
 /* Forms */
 form{background:var(--card); padding:1rem; border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,0.06); max-width:700px}
 label{display:block; font-weight:700; margin-top:0.75rem}
-input[type="text"], input[type="email"], textarea, input[type="file"]{width:100%; padding:0.5rem; border:1px solid #ccc; border-radius:4px; font-size:1rem}
+input[type="text"], input[type="email"], input[type="date"], textarea, input[type="file"]{width:100%; padding:0.5rem; border:1px solid #ccc; border-radius:4px; font-size:1rem}
 .form-row{margin-top:1rem; display:flex; gap:0.75rem}
 
 /* Video list */
 .video-list{display:grid; gap:1rem}
 .video-card{background:var(--card); padding:1rem; border-radius:6px}
+
+/* Gallery */
+.gallery-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:0.75rem; margin-top:0.5rem}
+.gallery-item{background:var(--card); padding:0.5rem; border-radius:6px; text-align:center; cursor:pointer}
+.gallery-thumb{width:100%; height:auto; display:block; border-radius:4px}
+
+/* News */
+.news-list{display:flex; flex-direction:column; gap:0.75rem}
+.news-item{background:var(--card); padding:0.75rem; border-radius:6px}
+.news-date{color:var(--muted); font-size:0.9rem}
 
 /* Footer */
 .site-footer{padding:1rem; text-align:center; color:var(--muted); background:#012a4a; color:#fff; margin-top:2rem}
