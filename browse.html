@@ -4,12 +4,12 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Browse Videos — RetroTube</title>
-  <meta name="description" content="Browse uploaded retro-style videos with captions and transcripts on RetroTube." />
+  <meta name="description" content="Browse embedded YouTube videos on RetroTube." />
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="site-header" role="banner">
-    <div class="logo"><a href="index.html"><img src="logo-retrotube.png" alt="RetroTube logo" width="160" height="48"></a></div>
+    <div class="logo"><a href="index.html"><img src="images/logo-retrotube.png" alt="RetroTube logo" width="160" height="48"></a></div>
     <nav class="main-nav" role="navigation" aria-label="Main">
       <ul>
         <li><a href="index.html" class="nav-link">Home</a></li>
@@ -24,26 +24,8 @@
 
   <main id="main" role="main">
     <h1>Browse videos</h1>
-    <h2>Latest uploads</h2>
-
+    <h2>Latest additions</h2>
     <div id="videoList" class="video-list" aria-live="polite"></div>
-
-    <template id="videoTemplate">
-      <article class="video-card">
-        <h3 class="video-title"></h3>
-        <video controls width="560" height="315" class="video-player">
-          Your browser does not support HTML5 video.
-        </video>
-        <div class="video-meta">
-          <p class="video-desc"></p>
-          <p><a class="download-transcript" href="#" download>Download transcript</a></p>
-          <div class="card-actions">
-            <button class="btn btn-delete" data-action="delete">Delete</button>
-            <button class="btn btn-edit" data-action="edit">Edit</button>
-          </div>
-        </div>
-      </article>
-    </template>
   </main>
 
   <footer class="site-footer" role="contentinfo">
