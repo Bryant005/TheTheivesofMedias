@@ -1,12 +1,15 @@
-// Updated RetroTube script: fetch shared data/videos.json from repo (public), merge with local owner entries,
-// YouTube-link workflow, owner-only admin unlock, local persistence, gallery and news rendering.
+// RetroTube full script.js
+// Features: admin unlock (client-side), upload YouTube links (localStorage), fetch shared data/videos.json & data/news.json from repo,
+// merge shared with local, render Browse, Gallery, News, Contact, Export helpers.
 
 // CONFIG
 const STORAGE_VIDEOS = 'retrotube_videos_v1';
 const STORAGE_NEWS = 'retrotube_news_v1';
 const SESSION_KEY = 'retrotube_admin_unlocked';
-const SHARED_VIDEOS_PATH = 'data/videos.json'; // add data/videos.json to your repo
-const ADMIN_PASSWORD = 'enter_your_admin_password_here'; // set your password here
+const SHARED_VIDEOS_PATH = 'data/videos.json';
+const SHARED_NEWS_PATH = 'data/news.json';
+// Set your admin password here (change before publishing)
+const ADMIN_PASSWORD = 'enter_your_admin_password_here';
 
 // -------------------- Admin unlock logic --------------------
 function setUnlocked(unlocked){
@@ -35,7 +38,7 @@ document.addEventListener('DOMContentLoaded', ()=> {
   initUploadForm();
   initContactForm();
   initNewsForm();
-  // initial render (async functions called, they handle awaiting)
+  // initial renders (async functions are triggered)
   renderBrowse();
   renderGallery();
   renderNewsList();
@@ -91,18 +94,21 @@ function save(key, arr){ localStorage.setItem(key, JSON.stringify(arr)); }
 function loadVideos(){ return load(STORAGE_VIDEOS); }
 function saveVideos(arr){ save(STORAGE_VIDEOS, arr); }
 
-// -------------------- Shared videos fetch & merge --------------------
-async function fetchSharedVideos(){
+// -------------------- Shared videos & news fetch & merge --------------------
+async function fetchSharedJson(path){
   try {
-    const res = await fetch(SHARED_VIDEOS_PATH, { cache: 'no-store' });
+    const res = await fetch(path, { cache: 'no-store' });
     if(!res.ok) return [];
     const arr = await res.json();
     return Array.isArray(arr) ? arr : [];
   } catch (e) {
-    console.warn('Error fetching shared videos', e);
+    console.warn('Error fetching shared JSON', path, e);
     return [];
   }
 }
+
+async function fetchSharedVideos(){ return await fetchSharedJson(SHARED_VIDEOS_PATH); }
+async function fetchSharedNews(){ return await fetchSharedJson(SHARED_NEWS_PATH); }
 
 async function loadCombinedVideos(){
   const shared = await fetchSharedVideos();
@@ -118,7 +124,24 @@ async function loadCombinedVideos(){
     const key = v.youtubeId || v.id;
     if(key && !map.has(key)) map.set(key, v);
   });
+  // Return shared first (in their order), then local-only (as inserted)
   return Array.from(map.values());
+}
+
+async function loadCombinedNews(){
+  const shared = await fetchSharedNews();
+  const local = load(STORAGE_NEWS);
+  const map = new Map();
+  shared.forEach(n => { if(n && n.id) { n._fromRepo = true; map.set(n.id, n); } });
+  local.forEach(n => { if(n && n.id && !map.has(n.id)) map.set(n.id, n); });
+  // Sort by created/date desc
+  const arr = Array.from(map.values());
+  arr.sort((a,b) => {
+    const ta = new Date(a.created || a.date || 0).getTime();
+    const tb = new Date(b.created || b.date || 0).getTime();
+    return tb - ta;
+  });
+  return arr;
 }
 
 // -------------------- File helper --------------------
@@ -213,7 +236,7 @@ function initContactForm(){
   });
 }
 
-// -------------------- News form --------------------
+// -------------------- News form (local) --------------------
 function initNewsForm(){
   const newsForm = document.getElementById('newsForm');
   if(!newsForm) return;
@@ -228,13 +251,13 @@ function initNewsForm(){
     const arr = load(STORAGE_NEWS);
     arr.unshift({ id, title, date, body, created: new Date().toISOString() });
     save(STORAGE_NEWS, arr);
-    status.textContent = 'News published locally.';
+    status.textContent = 'News published locally. To publish globally, add it to data/news.json in the repo.';
     newsForm.reset();
     renderNewsList();
   });
 }
 
-// -------------------- Render Browse (async - uses combined list) --------------------
+// -------------------- Render Browse (async) --------------------
 async function renderBrowse(){
   const container = document.getElementById('videoList');
   if(!container) return;
@@ -249,7 +272,7 @@ async function renderBrowse(){
   arr.forEach(v => {
     const art = document.createElement('article');
     art.className = 'video-card';
-    art.id = 'video-' + v.id;
+    art.id = 'video-' + (v.id || ('y' + (v.youtubeId || Date.now())));
 
     const h3 = document.createElement('h3'); h3.className = 'video-title'; h3.textContent = v.title || 'Untitled';
     art.appendChild(h3);
@@ -275,13 +298,16 @@ async function renderBrowse(){
     const delBtn = document.createElement('button'); delBtn.className = 'btn btn-delete'; delBtn.textContent = 'Delete';
     delBtn.addEventListener('click', ()=> {
       if(sessionStorage.getItem(SESSION_KEY) !== '1'){ alert('Admin unlocked only'); return; }
-      if(!confirm('Delete this video?')) return;
+      if(!confirm('Delete this video locally? (Repo videos must be edited in data/videos.json)')) return;
       const list = loadVideos().filter(x => x.id !== v.id);
       saveVideos(list);
       renderBrowse();
       renderGallery();
     });
-    actions.appendChild(delBtn);
+    // show delete only if this id exists in local storage
+    const localIds = loadVideos().map(x => x.id);
+    if(localIds.includes(v.id)) actions.appendChild(delBtn);
+
     art.appendChild(actions);
 
     if(v.transcript){
@@ -324,32 +350,88 @@ async function renderGallery(){
     const caption = document.createElement('div'); caption.textContent = v.title || 'Untitled';
     div.appendChild(caption);
 
-    div.addEventListener('click', ()=> { window.location.href = 'browse.html#video-' + v.id; });
+    div.addEventListener('click', ()=> { window.location.href = 'browse.html#video-' + (v.id || ('y' + (v.youtubeId || Date.now()))); });
     div.addEventListener('keydown', (e)=> { if(e.key === 'Enter') div.click(); });
 
     gallery.appendChild(div);
   });
 }
 
-// -------------------- Render News --------------------
-function renderNewsList(){
+// -------------------- Render News (async) --------------------
+async function renderNewsList(){
   const container = document.getElementById('newsList');
   if(!container) return;
   container.innerHTML = '';
-  const arr = load(STORAGE_NEWS);
+  const arr = await loadCombinedNews();
   if(!arr.length){ container.appendChild(document.createElement('p')).textContent = 'No news yet.'; return; }
+  const localIds = load(STORAGE_NEWS).map(x => x.id);
   arr.forEach(n => {
     const item = document.createElement('div');
     item.className = 'news-item';
     const h3 = document.createElement('h3'); h3.textContent = n.title;
-    const meta = document.createElement('div'); meta.className = 'news-date'; meta.textContent = new Date(n.date).toLocaleDateString();
+    const meta = document.createElement('div'); meta.className = 'news-date';
+    meta.textContent = n.date ? new Date(n.date).toLocaleDateString() : (n.created ? new Date(n.created).toLocaleDateString() : '');
     const p = document.createElement('p'); p.textContent = n.body;
-    const del = document.createElement('button'); del.className = 'btn btn-delete'; del.textContent = 'Delete'; del.addEventListener('click', ()=>{
-      if(sessionStorage.getItem(SESSION_KEY) !== '1'){ alert('Admin unlocked only'); return; }
-      if(!confirm('Delete this news item?')) return;
-      let list = load(STORAGE_NEWS); list = list.filter(x => x.id !== n.id); save(STORAGE_NEWS, list); renderNewsList();
-    });
-    item.appendChild(h3); item.appendChild(meta); item.appendChild(p); item.appendChild(del);
+    item.appendChild(h3); item.appendChild(meta); item.appendChild(p);
+    // Allow delete only for local items
+    if(localIds.includes(n.id)){
+      const del = document.createElement('button'); del.className = 'btn btn-delete'; del.textContent = 'Delete';
+      del.addEventListener('click', ()=>{
+        if(sessionStorage.getItem(SESSION_KEY) !== '1'){ alert('Admin unlocked only'); return; }
+        if(!confirm('Delete this news item locally? (Repo news must be edited in data/news.json)')) return;
+        let list = load(STORAGE_NEWS); list = list.filter(x => x.id !== n.id); save(STORAGE_NEWS, list); renderNewsList();
+      });
+      item.appendChild(del);
+    }
     container.appendChild(item);
   });
+}
+
+// -------------------- Export helpers (build shared JSON for copy-paste) --------------------
+// Useful to produce ready-to-paste JSON you can commit to data/videos.json or data/news.json.
+
+function buildSharedVideosJson(){
+  // combine shared + local, prefer shared (but include all)
+  fetchSharedVideos().then(shared => {
+    const local = loadVideos();
+    const all = [...shared];
+    // include local items that are not duplicates by youtubeId
+    const ids = new Set(shared.map(s => s.youtubeId || s.id));
+    local.forEach(l => {
+      const key = l.youtubeId || l.id;
+      if(!ids.has(key)){
+        // convert posterData to posterUrl placeholder (manual step): keep posterData as-is so you can inspect
+        all.push(Object.assign({}, l));
+      }
+    });
+    const json = JSON.stringify(all, null, 2);
+    copyToClipboard(json);
+    alert('Combined videos JSON copied to clipboard. Paste into data/videos.json in your repo and commit.');
+  });
+}
+
+function buildSharedNewsJson(){
+  fetchSharedNews().then(shared => {
+    const local = load(STORAGE_NEWS);
+    const all = [...shared];
+    const ids = new Set(shared.map(s => s.id));
+    local.forEach(l => { if(!ids.has(l.id)) all.push(l); });
+    const json = JSON.stringify(all, null, 2);
+    copyToClipboard(json);
+    alert('Combined news JSON copied to clipboard. Paste into data/news.json in your repo and commit.');
+  });
+}
+
+function copyToClipboard(text){
+  try {
+    navigator.clipboard.writeText(text);
+  } catch (e) {
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
 }
