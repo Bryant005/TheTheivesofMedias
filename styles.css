@@ -1,4 +1,72 @@
-h1 {
-    color: blue;
-    font-weight: bold;
+:root{
+  --bg:#f4f7fb;
+  --accent:#ff6f61;
+  --text:#0a0a0a;
+  --muted:#444;
+  --card:#fff;
+  --focus:#ffbf80;
+  --font-family: "Arial", "Helvetica", sans-serif;
+  --base-size:18px; /* body text >=16, using 18 */
+}
+*{box-sizing:border-box}
+html{font-size:16px}
+body{
+  font-family:var(--font-family);
+  background:linear-gradient(180deg,#f4f7fb,#eef3ff);
+  color:var(--text);
+  margin:0;
+  line-height:1.6; /* >=1.5 */
+  font-size:var(--base-size);
+}
+a{color:var(--accent); text-decoration:none}
+a:focus, button:focus, input:focus, textarea:focus{outline:3px solid var(--focus); outline-offset:2px}
+
+/* Header */
+.site-header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:1rem; background:#012a4a; color:#fff;
+}
+.logo img{height:48px}
+
+/* Navigation */
+.main-nav ul{list-style:none;margin:0;padding:0;display:flex;gap:1rem}
+.main-nav a{color:#fff; padding:0.5rem; display:inline-block}
+.nav-link{font-weight:700}
+
+/* Main layout */
+main{max-width:1000px;margin:1.5rem auto;padding:1rem}
+h1{font-size:2rem;margin-bottom:0.5rem}
+h2{font-size:1.25rem;margin-top:1.25rem}
+h3{font-size:1.125rem}
+
+/* Cards */
+.hero-cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1rem}
+.card{background:var(--card); padding:1rem; border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,0.08)}
+.card img{width:100%; height:auto; display:block}
+
+/* Buttons */
+.btn{background:var(--accent); color:#fff; border:none; padding:0.6rem 1rem; cursor:pointer; border-radius:4px; font-weight:700}
+.btn.alt{background:#e6e6e6;color:#111}
+
+/* Forms */
+form{background:var(--card); padding:1rem; border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,0.06); max-width:700px}
+label{display:block; font-weight:700; margin-top:0.75rem}
+input[type="text"], input[type="email"], textarea, input[type="file"]{width:100%; padding:0.5rem; border:1px solid #ccc; border-radius:4px; font-size:1rem}
+.form-row{margin-top:1rem; display:flex; gap:0.75rem}
+
+/* Video list */
+.video-list{display:grid; gap:1rem}
+.video-card{background:var(--card); padding:1rem; border-radius:6px}
+
+/* Footer */
+.site-footer{padding:1rem; text-align:center; color:var(--muted); background:#012a4a; color:#fff; margin-top:2rem}
+
+/* Accessibility helpers */
+.visually-hidden{position:absolute !important; height:1px; width:1px; overflow:hidden; clip:rect(1px,1px,1px,1px); white-space:nowrap}
+
+/* Responsive mobile */
+@media (max-width:600px){
+  .main-nav ul{flex-direction:row; gap:0.5rem; overflow-x:auto}
+  h1{font-size:1.5rem}
+  .video-player{width:100%; height:auto}
 }
