@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Browse Videos — RetroTube</title>
+  <meta name="description" content="Browse uploaded retro-style videos with captions and transcripts on RetroTube." />
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header" role="banner">
+    <div class="logo"><a href="index.html"><img src="logo-retrotube.png" alt="RetroTube logo" width="160" height="48"></a></div>
+    <nav class="main-nav" role="navigation" aria-label="Main">
+      <ul>
+        <li><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="browse.html" class="nav-link">Browse</a></li>
+        <li><a href="upload.html" class="nav-link">Upload</a></li>
+        <li><a href="about.html" class="nav-link">About</a></li>
+        <li><a href="contact.html" class="nav-link">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="main" role="main">
+    <h1>Browse videos</h1>
+    <h2>Latest uploads</h2>
+
+    <div id="videoList" class="video-list" aria-live="polite"></div>
+
+    <template id="videoTemplate">
+      <article class="video-card">
+        <h3 class="video-title"></h3>
+        <video controls width="560" height="315" class="video-player">
+          Your browser does not support HTML5 video.
+        </video>
+        <div class="video-meta">
+          <p class="video-desc"></p>
+          <p><a class="download-transcript" href="#" download>Download transcript</a></p>
+        </div>
+      </article>
+    </template>
+  </main>
+
+  <footer class="site-footer" role="contentinfo">
+    <p>© RetroTube</p>
+  </footer>
+
+  <script src="script.js" defer></script>
+</body>
+</html>
