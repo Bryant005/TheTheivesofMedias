@@ -1,6 +1,6 @@
 // RetroTube full script.js
 // Features: admin unlock (client-side), upload YouTube links (localStorage), fetch shared data/videos.json & data/news.json from repo,
-// merge shared with local, render Browse, Gallery, News, Contact, Export helpers.
+// merge shared with local, render Browse, Gallery, News, Home widget and floating carousel, Export helpers.
 
 // CONFIG
 const STORAGE_VIDEOS = 'retrotube_videos_v1';
@@ -10,6 +10,12 @@ const SHARED_VIDEOS_PATH = 'data/videos.json';
 const SHARED_NEWS_PATH = 'data/news.json';
 // Set your admin password here (change before publishing)
 const ADMIN_PASSWORD = 'enter_your_admin_password_here';
+
+// Carousel config
+const CAROUSEL_LIMIT = 5;
+const CAROUSEL_INTERVAL_MS = 5000;
+let _carouselIndex = 0;
+let _carouselTimer = null;
 
 // -------------------- Admin unlock logic --------------------
 function setUnlocked(unlocked){
@@ -38,10 +44,12 @@ document.addEventListener('DOMContentLoaded', ()=> {
   initUploadForm();
   initContactForm();
   initNewsForm();
-  // initial renders (async functions are triggered)
+  // initial renders
   renderBrowse();
   renderGallery();
   renderNewsList();
+  renderNewsWidget();
+  renderNewsCarousel();
 });
 
 // -------------------- Init helpers --------------------
@@ -94,7 +102,7 @@ function save(key, arr){ localStorage.setItem(key, JSON.stringify(arr)); }
 function loadVideos(){ return load(STORAGE_VIDEOS); }
 function saveVideos(arr){ save(STORAGE_VIDEOS, arr); }
 
-// -------------------- Shared videos & news fetch & merge --------------------
+// -------------------- Shared JSON fetch & merge --------------------
 async function fetchSharedJson(path){
   try {
     const res = await fetch(path, { cache: 'no-store' });
@@ -124,7 +132,6 @@ async function loadCombinedVideos(){
     const key = v.youtubeId || v.id;
     if(key && !map.has(key)) map.set(key, v);
   });
-  // Return shared first (in their order), then local-only (as inserted)
   return Array.from(map.values());
 }
 
@@ -134,7 +141,6 @@ async function loadCombinedNews(){
   const map = new Map();
   shared.forEach(n => { if(n && n.id) { n._fromRepo = true; map.set(n.id, n); } });
   local.forEach(n => { if(n && n.id && !map.has(n.id)) map.set(n.id, n); });
-  // Sort by created/date desc
   const arr = Array.from(map.values());
   arr.sort((a,b) => {
     const ta = new Date(a.created || a.date || 0).getTime();
@@ -254,6 +260,8 @@ function initNewsForm(){
     status.textContent = 'News published locally. To publish globally, add it to data/news.json in the repo.';
     newsForm.reset();
     renderNewsList();
+    renderNewsWidget();
+    renderNewsCarousel();
   });
 }
 
@@ -304,7 +312,6 @@ async function renderBrowse(){
       renderBrowse();
       renderGallery();
     });
-    // show delete only if this id exists in local storage
     const localIds = loadVideos().map(x => x.id);
     if(localIds.includes(v.id)) actions.appendChild(delBtn);
 
@@ -368,12 +375,12 @@ async function renderNewsList(){
   arr.forEach(n => {
     const item = document.createElement('div');
     item.className = 'news-item';
+    item.id = 'news-' + n.id;
     const h3 = document.createElement('h3'); h3.textContent = n.title;
     const meta = document.createElement('div'); meta.className = 'news-date';
     meta.textContent = n.date ? new Date(n.date).toLocaleDateString() : (n.created ? new Date(n.created).toLocaleDateString() : '');
     const p = document.createElement('p'); p.textContent = n.body;
     item.appendChild(h3); item.appendChild(meta); item.appendChild(p);
-    // Allow delete only for local items
     if(localIds.includes(n.id)){
       const del = document.createElement('button'); del.className = 'btn btn-delete'; del.textContent = 'Delete';
       del.addEventListener('click', ()=>{
@@ -387,22 +394,98 @@ async function renderNewsList(){
   });
 }
 
-// -------------------- Export helpers (build shared JSON for copy-paste) --------------------
-// Useful to produce ready-to-paste JSON you can commit to data/videos.json or data/news.json.
+// -------------------- Home widget (compact news) --------------------
+async function renderNewsWidget(limit = 3, containerId = 'homeNews'){
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  container.innerHTML = '';
+  const list = await loadCombinedNews();
+  if(!list || !list.length){
+    const p = document.createElement('p');
+    p.textContent = 'No news yet.';
+    container.appendChild(p);
+    return;
+  }
+  const items = list.slice(0, limit);
+  items.forEach(n => {
+    const item = document.createElement('div');
+    item.className = 'news-item';
+    const h4 = document.createElement('h4'); h4.textContent = n.title;
+    const meta = document.createElement('div'); meta.className = 'news-date';
+    meta.textContent = n.date ? new Date(n.date).toLocaleDateString() : (n.created ? new Date(n.created).toLocaleDateString() : '');
+    const p = document.createElement('p'); p.textContent = n.body.length > 180 ? n.body.slice(0, 177) + '...' : n.body;
+    item.appendChild(h4); item.appendChild(meta); item.appendChild(p);
+    item.addEventListener('click', ()=> { window.location.href = `news.html#news-${n.id}`; });
+    container.appendChild(item);
+  });
+}
 
+// -------------------- News carousel: render top N items and autoplay --------------------
+async function renderNewsCarousel(limit = CAROUSEL_LIMIT, containerId = 'carouselInner', rootId = 'newsCarouselCard'){
+  const root = document.getElementById(rootId);
+  const container = document.getElementById(containerId);
+  if(!container || !root) return;
+  container.innerHTML = '';
+  const list = await loadCombinedNews();
+  if(!list || !list.length){
+    root.style.display = 'none';
+    return;
+  }
+  const items = list.slice(0, limit);
+  items.forEach((n, i) => {
+    const slide = document.createElement('div');
+    slide.className = 'carousel-slide';
+    slide.id = `carousel-slide-${i}`;
+    const title = document.createElement('h4'); title.textContent = n.title;
+    const meta = document.createElement('div'); meta.className = 'meta'; meta.textContent = n.date ? new Date(n.date).toLocaleDateString() : (n.created ? new Date(n.created).toLocaleDateString() : '');
+    const body = document.createElement('p'); body.textContent = n.body.length > 220 ? n.body.slice(0,217) + '...' : n.body;
+    slide.appendChild(title); slide.appendChild(meta); slide.appendChild(body);
+    slide.style.cursor = 'pointer';
+    slide.addEventListener('click', ()=> { window.location.href = `news.html#news-${n.id}`; });
+    container.appendChild(slide);
+  });
+
+  root.style.display = '';
+
+  const prev = document.getElementById('carouselPrev');
+  const next = document.getElementById('carouselNext');
+  const close = document.getElementById('carouselClose');
+  prev && prev.addEventListener('click', ()=> { showCarouselIndex(_carouselIndex - 1); resetCarouselTimer(); });
+  next && next.addEventListener('click', ()=> { showCarouselIndex(_carouselIndex + 1); resetCarouselTimer(); });
+  close && close.addEventListener('click', ()=> { root.style.display = 'none'; stopCarouselTimer(); });
+
+  showCarouselIndex(0);
+  startCarouselTimer();
+}
+
+function showCarouselIndex(index){
+  const container = document.getElementById('carouselInner');
+  if(!container) return;
+  const slides = container.querySelectorAll('.carousel-slide');
+  if(!slides.length) return;
+  _carouselIndex = ((index % slides.length) + slides.length) % slides.length;
+  slides.forEach((s, i) => {
+    s.classList.toggle('active', i === _carouselIndex);
+  });
+}
+
+function startCarouselTimer(){
+  stopCarouselTimer();
+  _carouselTimer = setInterval(()=> { showCarouselIndex(_carouselIndex + 1); }, CAROUSEL_INTERVAL_MS);
+}
+
+function stopCarouselTimer(){ if(_carouselTimer){ clearInterval(_carouselTimer); _carouselTimer = null; } }
+function resetCarouselTimer(){ stopCarouselTimer(); startCarouselTimer(); }
+
+// -------------------- Export helpers (build shared JSON for copy-paste) --------------------
 function buildSharedVideosJson(){
-  // combine shared + local, prefer shared (but include all)
   fetchSharedVideos().then(shared => {
     const local = loadVideos();
     const all = [...shared];
-    // include local items that are not duplicates by youtubeId
     const ids = new Set(shared.map(s => s.youtubeId || s.id));
     local.forEach(l => {
       const key = l.youtubeId || l.id;
-      if(!ids.has(key)){
-        // convert posterData to posterUrl placeholder (manual step): keep posterData as-is so you can inspect
-        all.push(Object.assign({}, l));
-      }
+      if(!ids.has(key)) all.push(Object.assign({}, l));
     });
     const json = JSON.stringify(all, null, 2);
     copyToClipboard(json);
@@ -426,7 +509,6 @@ function copyToClipboard(text){
   try {
     navigator.clipboard.writeText(text);
   } catch (e) {
-    // fallback
     const ta = document.createElement('textarea');
     ta.value = text;
     document.body.appendChild(ta);
