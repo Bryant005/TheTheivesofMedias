@@ -8,6 +8,16 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <!-- News carousel note card (fixed at top) -->
+  <section id="newsCarouselCard" class="news-carousel" aria-label="Latest news carousel" style="display:none">
+    <div class="carousel-inner" id="carouselInner" role="region" aria-live="polite"></div>
+    <div class="carousel-controls">
+      <button id="carouselPrev" class="btn alt" aria-label="Previous news">‹</button>
+      <button id="carouselNext" class="btn" aria-label="Next news">›</button>
+    </div>
+    <button id="carouselClose" class="btn alt" aria-label="Close news" title="Close">✕</button>
+  </section>
+
   <header class="site-header" role="banner">
     <div class="logo">
       <a href="index.html"><img src="images/logo-retrotube.png" alt="RetroTube logo" width="160" height="48"></a>
@@ -50,6 +60,12 @@
       <h2 id="galleryHeading">Gallery</h2>
       <p class="lead">Thumbnails of added YouTube videos.</p>
       <div id="galleryGrid" class="gallery-grid" aria-live="polite"></div>
+    </section>
+
+    <section id="homeNewsSection" aria-labelledby="homeNewsHeading">
+      <h2 id="homeNewsHeading">Latest News</h2>
+      <div id="homeNews" class="home-news" aria-live="polite"></div>
+      <p><a href="news.html">See all news</a></p>
     </section>
 
     <section>
