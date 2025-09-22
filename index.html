@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>The Theives of Media</title>
+  <title>RetroTube — Share Retro Videos</title>
   <meta name="description" content="RetroTube: upload and browse early-2000s themed videos with captions and transcripts." />
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -17,6 +17,7 @@
         <li><a href="index.html" class="nav-link">Home</a></li>
         <li><a href="browse.html" class="nav-link">Browse</a></li>
         <li><a href="upload.html" class="nav-link">Upload</a></li>
+        <li><a href="news.html" class="nav-link">News</a></li>
         <li><a href="about.html" class="nav-link">About</a></li>
         <li><a href="contact.html" class="nav-link">Contact</a></li>
       </ul>
@@ -24,26 +25,32 @@
   </header>
 
   <main id="main" role="main">
-    <h1>The Theives of Media — Early 2000s video vibes</h1>
+    <h1>RetroTube — Early 2000s video vibes</h1>
 
     <section>
       <h2>Featured</h2>
       <p class="lead">Discover community uploads, captions, and transcripts. Keyboard navigation and ARIA-ready controls included.</p>
-      <div class="hero-cards">
+      <div class="hero-cards" aria-live="polite">
         <article class="card" tabindex="0">
-          <h3>Reviews</h3>
+          <h3>Retro Skate Compilation</h3>
           <img src="images/skate-thumb.jpg" alt="Silhouette of a skateboarder at sunset" width="320" height="180">
-          <p>Watch full revire</p>
+          <p>Watch a classic mix of skate clips with subtitles and a downloadable transcript.</p>
           <p><a class="cta" href="browse.html#video-1">Watch</a></p>
         </article>
 
         <article class="card" tabindex="0">
-          <h3>Game Walkthrough</h3>
+          <h3>8-bit Game Walkthrough</h3>
           <img src="images/8bit-thumb.jpg" alt="Pixelated 8-bit game screenshot" width="320" height="180">
           <p>Commentary and closed captions included; transcript available on the video page.</p>
           <p><a class="cta" href="browse.html#video-2">Watch</a></p>
         </article>
       </div>
+    </section>
+
+    <section aria-labelledby="galleryHeading">
+      <h2 id="galleryHeading">Gallery</h2>
+      <p class="lead">Thumbnail gallery of uploaded videos and images.</p>
+      <div id="galleryGrid" class="gallery-grid" aria-live="polite"></div>
     </section>
 
     <section>
@@ -63,10 +70,10 @@
         <li><a href="index.html">Home</a></li>
         <li><a href="browse.html">Browse</a></li>
         <li><a href="upload.html">Upload</a></li>
-        <li><a href="about.html">About</a></li>
+        <li><a href="news.html">News</a></li>
       </ul>
     </nav>
-    <p>©2005–2025</p>
+    <p>© RetroTube 2005–2025</p>
   </footer>
 
   <script src="script.js" defer></script>
