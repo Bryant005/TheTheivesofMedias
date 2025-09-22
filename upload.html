@@ -3,22 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Upload Video — RetroTube (Owner Only)</title>
-  <meta name="description" content="Upload videos to RetroTube. Owner-only upload page." />
+  <title>Upload — RetroTube (Owner Only)</title>
+  <meta name="description" content="Owner-only Upload page for adding YouTube links." />
   <link rel="stylesheet" href="styles.css">
   <style>
-    /* Simple overlay styles for the admin unlock */
-    .admin-overlay{
-      position:fixed; inset:0; background:rgba(0,0,0,0.65); display:flex; align-items:center; justify-content:center; z-index:9999;
-    }
+    .admin-overlay{position:fixed; inset:0; background:rgba(0,0,0,0.65); display:flex; align-items:center; justify-content:center; z-index:9999}
     .admin-box{background:#fff;padding:1.25rem;border-radius:8px;max-width:420px;width:100%}
-    .admin-box h2{margin-top:0}
     .hidden{display:none}
   </style>
 </head>
 <body>
   <header class="site-header" role="banner">
-    <div class="logo"><a href="index.html"><img src="logo-retrotube.png" alt="RetroTube logo" width="160" height="48"></a></div>
+    <div class="logo"><a href="index.html"><img src="images/logo-retrotube.png" alt="RetroTube logo" width="160" height="48"></a></div>
     <nav class="main-nav" role="navigation" aria-label="Main">
       <ul>
         <li><a href="index.html" class="nav-link">Home</a></li>
@@ -32,31 +28,28 @@
   </header>
 
   <main id="main" role="main">
-    <h1>Owner Upload (admin only)</h1>
+    <h1>Owner Upload (YouTube links)</h1>
 
-    <div id="lockedNotice" class="meta">This page is locked. Please unlock with your admin password to upload.</div>
+    <div id="lockedNotice" class="meta">This page is locked. Enter admin password to add YouTube links.</div>
 
-    <form id="uploadForm" class="hidden" aria-label="Video upload form">
+    <form id="uploadForm" class="hidden" aria-label="YouTube link upload form">
+      <label for="ytUrl">YouTube URL</label>
+      <input id="ytUrl" name="ytUrl" type="url" placeholder="https://www.youtube.com/watch?v=XXXXX" required>
+
       <label for="title">Title</label>
       <input id="title" name="title" type="text" required minlength="3" aria-required="true">
 
       <label for="description">Description</label>
-      <textarea id="description" name="description" required rows="4"></textarea>
+      <textarea id="description" name="description" required rows="3"></textarea>
 
-      <label for="videoFile">Video file</label>
-      <input id="videoFile" name="videoFile" type="file" accept="video/mp4,video/webm" required>
-
-      <label for="posterFile">Thumbnail image (optional)</label>
+      <label for="posterFile">Thumbnail image (optional, &lt;250KB)</label>
       <input id="posterFile" name="posterFile" type="file" accept="image/*">
 
-      <label for="captionFile">Caption file (WebVTT .vtt) — optional</label>
-      <input id="captionFile" name="captionFile" type="file" accept=".vtt">
-
-      <label for="transcript">Or paste a transcript (text)</label>
+      <label for="transcript">Transcript (optional)</label>
       <textarea id="transcript" name="transcript" rows="6"></textarea>
 
       <div class="form-row">
-        <button type="submit" class="btn">Upload video</button>
+        <button type="submit" class="btn">Add YouTube video</button>
         <button type="reset" class="btn alt">Reset</button>
       </div>
 
@@ -84,128 +77,6 @@
     </div>
   </div>
 
-  <script>
-    // === CONFIGURE HERE ===
-    // Replace this with a password you choose. Keep it secret.
-    const ADMIN_PASSWORD = 'replace_with_your_password';
-    // ======================
-
-    // Session key used to remember admin unlock for this browser session only
-    const SESSION_KEY = 'retrotube_admin_unlocked';
-
-    const overlay = document.getElementById('adminOverlay');
-    const unlockBtn = document.getElementById('unlockBtn');
-    const cancelBtn = document.getElementById('cancelBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const adminPass = document.getElementById('adminPass');
-    const adminStatus = document.getElementById('adminStatus');
-    const uploadForm = document.getElementById('uploadForm');
-    const lockedNotice = document.getElementById('lockedNotice');
-
-    function setUnlocked(unlocked){
-      if(unlocked){
-        sessionStorage.setItem(SESSION_KEY, '1');
-        overlay.style.display = 'none';
-        uploadForm.classList.remove('hidden');
-        lockedNotice.classList.add('hidden');
-        logoutBtn.classList.remove('hidden');
-      } else {
-        sessionStorage.removeItem(SESSION_KEY);
-        overlay.style.display = '';
-        uploadForm.classList.add('hidden');
-        lockedNotice.classList.remove('hidden');
-        logoutBtn.classList.add('hidden');
-      }
-    }
-
-    // initialize state
-    if(sessionStorage.getItem(SESSION_KEY) === '1'){
-      setUnlocked(true);
-    } else {
-      setUnlocked(false);
-    }
-
-    unlockBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      const val = adminPass.value || '';
-      if(!val) { adminStatus.textContent = 'Enter password.'; return; }
-      if(val === ADMIN_PASSWORD){
-        adminStatus.textContent = 'Unlocked for this session.';
-        setUnlocked(true);
-        adminPass.value = '';
-      } else {
-        adminStatus.textContent = 'Incorrect password.';
-      }
-    });
-
-    cancelBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      // If not unlocked, send user back to home
-      if(!sessionStorage.getItem(SESSION_KEY)) window.location.href = 'index.html';
-    });
-
-    logoutBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      setUnlocked(false);
-      adminStatus.textContent = 'Locked.';
-    });
-
-    // Optional: keyboard accessibility - focus the password input when overlay shown
-    document.addEventListener('keydown', (e) => {
-      if(overlay.style.display !== 'none' && e.key === 'Escape') {
-        // if not unlocked, go home
-        if(!sessionStorage.getItem(SESSION_KEY)) window.location.href = 'index.html';
-      }
-    });
-
-    // Upload form submit: uses your existing client-side upload logic
-    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      // ensure admin unlocked
-      if(sessionStorage.getItem(SESSION_KEY) !== '1'){
-        document.getElementById('uploadStatus').textContent = 'You must unlock admin to upload.';
-        return;
-      }
-
-      // Existing simple local upload behavior (keeps using localStorage as before).
-      // Replace this block with your server upload call if you later add a backend.
-      const status = document.getElementById('uploadStatus');
-      status.textContent = 'Processing upload...';
-      const title = document.getElementById('title').value.trim();
-      const description = document.getElementById('description').value.trim();
-      const videoFileInput = document.getElementById('videoFile');
-      const captionFileInput = document.getElementById('captionFile');
-      const posterFileInput = document.getElementById('posterFile');
-      const transcriptText = document.getElementById('transcript').value.trim();
-
-      if(!videoFileInput.files.length){
-        status.textContent = 'Please select a video file.';
-        return;
-      }
-      // store as object URL for demo; production should upload to server
-      const file = videoFileInput.files[0];
-      const blobUrl = URL.createObjectURL(file);
-      let vtt = '';
-      if(captionFileInput.files.length) vtt = await captionFileInput.files[0].text();
-
-      let posterUrl = '';
-      if(posterFileInput && posterFileInput.files.length){
-        posterUrl = URL.createObjectURL(posterFileInput.files[0]);
-      }
-
-      const id = 'v' + Date.now();
-      const videoObj = { id, title, description, blobUrl, created: new Date().toISOString(), vtt, transcript: transcriptText, poster: posterUrl };
-      // save to localStorage as demo storage (visible to you only)
-      const key = 'retrotube_videos_v1';
-      const arr = JSON.parse(localStorage.getItem(key) || '[]');
-      arr.unshift(videoObj);
-      localStorage.setItem(key, JSON.stringify(arr));
-
-      status.textContent = 'Upload saved locally. Only you can see it on this browser.';
-      this.reset();
-      setTimeout(()=> URL.revokeObjectURL(blobUrl), 5000);
-      if(posterUrl) setTimeout(()=> URL.revokeObjectURL(posterUrl), 5000);
-    });
-  </script>
+  <script src="script.js" defer></script>
 </body>
 </html>
