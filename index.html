@@ -4,13 +4,13 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>RetroTube — Share Retro Videos</title>
-  <meta name="description" content="RetroTube: upload and browse early-2000s themed videos with captions and transcripts." />
+  <meta name="description" content="RetroTube: early-2000s themed video site showing YouTube embeds and links." />
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="site-header" role="banner">
     <div class="logo">
-      <a href="index.html"><img src="logo-retrotube.png" alt="RetroTube logo" width="160" height="48"></a>
+      <a href="index.html"><img src="images/logo-retrotube.png" alt="RetroTube logo" width="160" height="48"></a>
     </div>
     <nav class="main-nav" role="navigation" aria-label="Main">
       <ul>
@@ -25,42 +25,40 @@
   </header>
 
   <main id="main" role="main">
-    <h1>RetroTube — Early 2000s video vibes</h1>
+    <h1>RetroTube — Early 2000s vibes</h1>
 
     <section>
       <h2>Featured</h2>
-      <p class="lead">Discover community uploads, captions, and transcripts. Keyboard navigation and ARIA-ready controls included.</p>
+      <p class="lead">Community videos powered by YouTube links. Click any thumbnail to jump to the video in Browse.</p>
       <div class="hero-cards" aria-live="polite">
         <article class="card" tabindex="0">
           <h3>Retro Skate Compilation</h3>
-          <img src="images/skate-thumb.jpg" alt="Silhouette of a skateboarder at sunset" width="320" height="180">
-          <p>Watch a classic mix of skate clips with subtitles and a downloadable transcript.</p>
-          <p><a class="cta" href="browse.html#video-1">Watch</a></p>
+          <img src="images/skate-thumb.jpg" alt="Skate thumbnail" width="320" height="180">
+          <p>Embedded YouTube players and "Watch on YouTube" links.</p>
+          <p><a class="cta" href="browse.html">Browse</a></p>
         </article>
-
         <article class="card" tabindex="0">
           <h3>8-bit Game Walkthrough</h3>
-          <img src="images/8bit-thumb.jpg" alt="Pixelated 8-bit game screenshot" width="320" height="180">
-          <p>Commentary and closed captions included; transcript available on the video page.</p>
-          <p><a class="cta" href="browse.html#video-2">Watch</a></p>
+          <img src="images/8bit-thumb.jpg" alt="8-bit thumbnail" width="320" height="180">
+          <p>Owner can add YouTube links on the Upload page (admin only).</p>
+          <p><a class="cta" href="upload.html">Upload</a></p>
         </article>
       </div>
     </section>
 
     <section aria-labelledby="galleryHeading">
       <h2 id="galleryHeading">Gallery</h2>
-      <p class="lead">Thumbnail gallery of uploaded videos and images.</p>
+      <p class="lead">Thumbnails of added YouTube videos.</p>
       <div id="galleryGrid" class="gallery-grid" aria-live="polite"></div>
     </section>
 
     <section>
-      <h2>Get started</h2>
+      <h2>How it works</h2>
       <ol>
-        <li>Click Upload to add your MP4 or WebM video.</li>
-        <li>Add a title, description, and a transcript or VTT caption file.</li>
-        <li>Share the link or browse community videos.</li>
+        <li>Owner unlocks Upload with the admin password.</li>
+        <li>Owner adds YouTube URLs, optional poster images, and transcripts.</li>
+        <li>Visitors see embedded players on Browse and can open videos on YouTube.</li>
       </ol>
-      <p class="meta">Tip: Use a descriptive title and add keywords in the description for better discoverability.</p>
     </section>
   </main>
 
@@ -73,7 +71,7 @@
         <li><a href="news.html">News</a></li>
       </ul>
     </nav>
-    <p>© RetroTube 2005–2025</p>
+    <p>© RetroTube</p>
   </footer>
 
   <script src="script.js" defer></script>
