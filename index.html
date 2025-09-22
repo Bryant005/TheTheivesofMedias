@@ -1,14 +1,74 @@
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=<device-width>, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Theives of Media</title>
+  <meta name="description" content="RetroTube: upload and browse early-2000s themed videos with captions and transcripts." />
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1> HELLO</h1>
-    <p> IS THIS WORKING?</p>
-    <p> IS IT?!?!?!</p>
-    <p> AHHHHHHHHHHHHHHHHHH</p>
+  <header class="site-header" role="banner">
+    <div class="logo">
+      <a href="index.html"><img src="logo-retrotube.png" alt="RetroTube logo" width="160" height="48"></a>
+    </div>
+    <nav class="main-nav" role="navigation" aria-label="Main">
+      <ul>
+        <li><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="browse.html" class="nav-link">Browse</a></li>
+        <li><a href="upload.html" class="nav-link">Upload</a></li>
+        <li><a href="about.html" class="nav-link">About</a></li>
+        <li><a href="contact.html" class="nav-link">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="main" role="main">
+    <h1>The Theives of Media — Early 2000s video vibes</h1>
+
+    <section>
+      <h2>Featured</h2>
+      <p class="lead">Discover community uploads, captions, and transcripts. Keyboard navigation and ARIA-ready controls included.</p>
+      <div class="hero-cards">
+        <article class="card" tabindex="0">
+          <h3>Reviews</h3>
+          <img src="images/skate-thumb.jpg" alt="Silhouette of a skateboarder at sunset" width="320" height="180">
+          <p>Watch full revire</p>
+          <p><a class="cta" href="browse.html#video-1">Watch</a></p>
+        </article>
+
+        <article class="card" tabindex="0">
+          <h3>Game Walkthrough</h3>
+          <img src="images/8bit-thumb.jpg" alt="Pixelated 8-bit game screenshot" width="320" height="180">
+          <p>Commentary and closed captions included; transcript available on the video page.</p>
+          <p><a class="cta" href="browse.html#video-2">Watch</a></p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>Get started</h2>
+      <ol>
+        <li>Click Upload to add your MP4 or WebM video.</li>
+        <li>Add a title, description, and a transcript or VTT caption file.</li>
+        <li>Share the link or browse community videos.</li>
+      </ol>
+      <p class="meta">Tip: Use a descriptive title and add keywords in the description for better discoverability.</p>
+    </section>
+  </main>
+
+  <footer role="contentinfo" class="site-footer">
+    <nav aria-label="Footer">
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="browse.html">Browse</a></li>
+        <li><a href="upload.html">Upload</a></li>
+        <li><a href="about.html">About</a></li>
+      </ul>
+    </nav>
+    <p>©2005–2025</p>
+  </footer>
+
+  <script src="script.js" defer></script>
 </body>
 </html>
