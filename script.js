@@ -21,19 +21,26 @@ let _carouselTimer = null;
 function setUnlocked(unlocked){
   const overlay = document.getElementById('adminOverlay');
   const uploadForm = document.getElementById('uploadForm');
+  const newsForm = document.getElementById('newsForm');
   const lockedNotice = document.getElementById('lockedNotice');
+  const newsLockedNotice = document.getElementById('newsLockedNotice');
   const logoutBtn = document.getElementById('logoutBtn');
+
   if(unlocked){
     sessionStorage.setItem(SESSION_KEY, '1');
     if(overlay) overlay.style.display = 'none';
     if(uploadForm) uploadForm.classList.remove('hidden');
+    if(newsForm) newsForm.classList.remove('hidden');
     if(lockedNotice) lockedNotice.classList.add('hidden');
+    if(newsLockedNotice) newsLockedNotice.classList.add('hidden');
     if(logoutBtn) logoutBtn.classList.remove('hidden');
   } else {
     sessionStorage.removeItem(SESSION_KEY);
     if(overlay) overlay.style.display = '';
     if(uploadForm) uploadForm.classList.add('hidden');
+    if(newsForm) newsForm.classList.add('hidden');
     if(lockedNotice) lockedNotice.classList.remove('hidden');
+    if(newsLockedNotice) newsLockedNotice.classList.remove('hidden');
     if(logoutBtn) logoutBtn.classList.add('hidden');
   }
 }
@@ -242,12 +249,17 @@ function initContactForm(){
   });
 }
 
-// -------------------- News form (local) --------------------
+// -------------------- News form (admin only) --------------------
 function initNewsForm(){
   const newsForm = document.getElementById('newsForm');
   if(!newsForm) return;
   newsForm.addEventListener('submit', (e) => {
     e.preventDefault();
+    if(sessionStorage.getItem(SESSION_KEY) !== '1'){
+      const status = document.getElementById('newsStatus');
+      if(status) status.textContent = 'Unlock admin first to add news.';
+      return;
+    }
     const status = document.getElementById('newsStatus');
     const title = document.getElementById('newsTitle').value.trim();
     const date = document.getElementById('newsDate').value;
@@ -400,120 +412,55 @@ async function renderNewsWidget(limit = 3, containerId = 'homeNews'){
   if(!container) return;
   container.innerHTML = '';
   const list = await loadCombinedNews();
-  if(!list || !list.length){
-    const p = document.createElement('p');
-    p.textContent = 'No news yet.';
-    container.appendChild(p);
-    return;
-  }
-  const items = list.slice(0, limit);
-  items.forEach(n => {
-    const item = document.createElement('div');
-    item.className = 'news-item';
-    const h4 = document.createElement('h4'); h4.textContent = n.title;
-    const meta = document.createElement('div'); meta.className = 'news-date';
-    meta.textContent = n.date ? new Date(n.date).toLocaleDateString() : (n.created ? new Date(n.created).toLocaleDateString() : '');
-    const p = document.createElement('p'); p.textContent = n.body.length > 180 ? n.body.slice(0, 177) + '...' : n.body;
-    item.appendChild(h4); item.appendChild(meta); item.appendChild(p);
-    item.addEventListener('click', ()=> { window.location.href = `news.html#news-${n.id}`; });
-    container.appendChild(item);
+  list.slice(0, limit).forEach(n => {
+    const div = document.createElement('div'); div.className = 'home-news-item';
+    const a = document.createElement('a'); a.href = 'news.html#news-' + n.id; a.textContent = n.title;
+    div.appendChild(a);
+    container.appendChild(div);
   });
 }
 
-// -------------------- News carousel: render top N items and autoplay --------------------
-async function renderNewsCarousel(limit = CAROUSEL_LIMIT, containerId = 'carouselInner', rootId = 'newsCarouselCard'){
-  const root = document.getElementById(rootId);
-  const container = document.getElementById(containerId);
-  if(!container || !root) return;
-  container.innerHTML = '';
-  const list = await loadCombinedNews();
-  if(!list || !list.length){
-    root.style.display = 'none';
-    return;
-  }
-  const items = list.slice(0, limit);
-  items.forEach((n, i) => {
-    const slide = document.createElement('div');
-    slide.className = 'carousel-slide';
-    slide.id = `carousel-slide-${i}`;
-    const title = document.createElement('h4'); title.textContent = n.title;
-    const meta = document.createElement('div'); meta.className = 'meta'; meta.textContent = n.date ? new Date(n.date).toLocaleDateString() : (n.created ? new Date(n.created).toLocaleDateString() : '');
-    const body = document.createElement('p'); body.textContent = n.body.length > 220 ? n.body.slice(0,217) + '...' : n.body;
-    slide.appendChild(title); slide.appendChild(meta); slide.appendChild(body);
-    slide.style.cursor = 'pointer';
-    slide.addEventListener('click', ()=> { window.location.href = `news.html#news-${n.id}`; });
-    container.appendChild(slide);
+// -------------------- Floating news carousel --------------------
+async function renderNewsCarousel(){
+  const cont = document.getElementById('floatingNews');
+  if(!cont) return;
+  cont.innerHTML = '';
+  const arr = await loadCombinedNews();
+  if(!arr.length){ cont.style.display = 'none'; return; }
+  cont.style.display = '';
+  const inner = document.createElement('div'); inner.className = 'carousel-inner'; cont.appendChild(inner);
+  arr.slice(0, CAROUSEL_LIMIT).forEach(n => {
+    const div = document.createElement('div'); div.className = 'carousel-item';
+    const a = document.createElement('a'); a.href = 'news.html#news-' + n.id; a.textContent = n.title;
+    div.appendChild(a); inner.appendChild(div);
   });
-
-  root.style.display = '';
-
-  const prev = document.getElementById('carouselPrev');
-  const next = document.getElementById('carouselNext');
-  const close = document.getElementById('carouselClose');
-  prev && prev.addEventListener('click', ()=> { showCarouselIndex(_carouselIndex - 1); resetCarouselTimer(); });
-  next && next.addEventListener('click', ()=> { showCarouselIndex(_carouselIndex + 1); resetCarouselTimer(); });
-  close && close.addEventListener('click', ()=> { root.style.display = 'none'; stopCarouselTimer(); });
-
-  showCarouselIndex(0);
-  startCarouselTimer();
+  const items = inner.querySelectorAll('.carousel-item');
+  if(!items.length) return;
+  items.forEach((it, i) => it.style.display = (i === 0 ? '' : 'none'));
+  _carouselIndex = 0;
+  if(_carouselTimer) clearInterval(_carouselTimer);
+  _carouselTimer = setInterval(()=>{
+    items[_carouselIndex].style.display = 'none';
+    _carouselIndex = (_carouselIndex + 1) % items.length;
+    items[_carouselIndex].style.display = '';
+  }, CAROUSEL_INTERVAL_MS);
 }
 
-function showCarouselIndex(index){
-  const container = document.getElementById('carouselInner');
-  if(!container) return;
-  const slides = container.querySelectorAll('.carousel-slide');
-  if(!slides.length) return;
-  _carouselIndex = ((index % slides.length) + slides.length) % slides.length;
-  slides.forEach((s, i) => {
-    s.classList.toggle('active', i === _carouselIndex);
-  });
+// -------------------- Export helpers --------------------
+async function exportVideosJson(){
+  const arr = loadVideos();
+  const json = JSON.stringify(arr, null, 2);
+  downloadTextFile(json, 'videos.json');
 }
-
-function startCarouselTimer(){
-  stopCarouselTimer();
-  _carouselTimer = setInterval(()=> { showCarouselIndex(_carouselIndex + 1); }, CAROUSEL_INTERVAL_MS);
+async function exportNewsJson(){
+  const arr = load(STORAGE_NEWS);
+  const json = JSON.stringify(arr, null, 2);
+  downloadTextFile(json, 'news.json');
 }
-
-function stopCarouselTimer(){ if(_carouselTimer){ clearInterval(_carouselTimer); _carouselTimer = null; } }
-function resetCarouselTimer(){ stopCarouselTimer(); startCarouselTimer(); }
-
-// -------------------- Export helpers (build shared JSON for copy-paste) --------------------
-function buildSharedVideosJson(){
-  fetchSharedVideos().then(shared => {
-    const local = loadVideos();
-    const all = [...shared];
-    const ids = new Set(shared.map(s => s.youtubeId || s.id));
-    local.forEach(l => {
-      const key = l.youtubeId || l.id;
-      if(!ids.has(key)) all.push(Object.assign({}, l));
-    });
-    const json = JSON.stringify(all, null, 2);
-    copyToClipboard(json);
-    alert('Combined videos JSON copied to clipboard. Paste into data/videos.json in your repo and commit.');
-  });
-}
-
-function buildSharedNewsJson(){
-  fetchSharedNews().then(shared => {
-    const local = load(STORAGE_NEWS);
-    const all = [...shared];
-    const ids = new Set(shared.map(s => s.id));
-    local.forEach(l => { if(!ids.has(l.id)) all.push(l); });
-    const json = JSON.stringify(all, null, 2);
-    copyToClipboard(json);
-    alert('Combined news JSON copied to clipboard. Paste into data/news.json in your repo and commit.');
-  });
-}
-
-function copyToClipboard(text){
-  try {
-    navigator.clipboard.writeText(text);
-  } catch (e) {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-  }
+function downloadTextFile(text, filename){
+  const blob = new Blob([text], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=> URL.revokeObjectURL(url), 2000);
 }
